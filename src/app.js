@@ -5,7 +5,6 @@ const cors = require("cors");
 const { v4: uuid, validate: isUuid } = require("uuid");
 const validateId = (request, response, next) => {
   const { id } = request.params;
-  console.log("Passou por aqui");
   if (!isUuid(id)) {
     return response.status(400).json({ error: "Invalid repository id" });
   }
@@ -16,7 +15,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use("/repositores/:id", validateId);
+app.use("/repositories/:id", validateId);
 const repositories = [];
 
 app.get("/repositories", (request, response) => {
@@ -38,7 +37,7 @@ app.post("/repositories", (request, response) => {
   return response.status(201).json(repository);
 });
 
-app.put("/repository/:id", (request, response) => {
+app.put("/repositories/:id", (request, response) => {
   const { id } = request.params;
 
   const { title = null, url = null, techs = null } = request.body;
@@ -46,7 +45,9 @@ app.put("/repository/:id", (request, response) => {
   const repositoryIndex = repositories.findIndex(
     (repository) => repository.id === id
   );
-
+  if (repositoryIndex < 0) {
+    return response.status(400).json({ error: "Invalid repository id" });
+  }
   repositories[repositoryIndex] = {
     ...repositories[repositoryIndex],
     title: title ? title : repositories[repositoryIndex].title,
@@ -56,17 +57,33 @@ app.put("/repository/:id", (request, response) => {
   return response.status(200).json(repositories[repositoryIndex]);
 });
 
-app.delete("/repository/:id", (request, response) => {
+app.delete("/repositories/:id", (request, response) => {
   const { id } = request.params;
   const repositoryIndex = repositories.findIndex(
     (repository) => repository.id === id
   );
+  if (repositoryIndex < 0) {
+    return response.status(400).json({ error: "Invalid repository id" });
+  }
+
   repositories.splice(repositoryIndex, 1);
-  return response.send({ message: "Repositório deletado com sucesso!" });
+  return response
+    .status(204)
+    .send({ message: "Repositório deletado com sucesso!" });
 });
 
 app.post("/repositories/:id/like", (request, response) => {
-  // TODO
+  const { id } = request.params;
+
+  const repositoryIndex = repositories.findIndex(
+    (repository) => repository.id === id
+  );
+
+  if (repositoryIndex < 0) {
+    return response.status(400).json({ error: "Invalid repository id" });
+  }
+  repositories[repositoryIndex].likes++;
+  return response.status(200).json(repositories[repositoryIndex]);
 });
 
 module.exports = app;
